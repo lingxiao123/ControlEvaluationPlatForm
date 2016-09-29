@@ -17,7 +17,7 @@
     </TreeNode>
   </TreeNode>
   <TreeNode Text="内控评价">
-    <TreeNode Text="内控执行评价" NavigateUrl="~/Office/WorkNotice_List.aspx" >
+    <TreeNode Text="内控执行评价" NavigateUrl="~/Evaluation/Evaluation.aspx" >
     </TreeNode>
   </TreeNode>
   <TreeNode Text="查询输出">

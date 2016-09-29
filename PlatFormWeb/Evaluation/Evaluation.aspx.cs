@@ -2,35 +2,52 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Web;
-using DbAccess;
-using PlatFormWeb.Utility;
+using System.Web.UI;
+using System.Web.UI.WebControls;
 using FineUI;
+using DbAccess;
 using System.Data;
 
-
-namespace PlatFormWeb.User
+namespace PlatFormWeb.Evaluation
 {
-    public partial class UserInfo_AddObject :PageBase
+    public partial class Evaluation :PageBase
     {
         protected void Page_Load(object sender, EventArgs e)
         {
             if (!IsPostBack)
             {
-                if (string.IsNullOrEmpty(Session["UserId"].ToString()))
-                {
-                    PageContext.RegisterStartupScript(ActiveWindow.GetHideRefreshReference());
-                    Alert.ShowInTop("您未选择用户，请至少选中一个用户！");
-                }
                 LoadData();
             }
         }
 
         private void LoadData()
         {
-            string sql = string.Format("select Id,Code,AgencyName from Agency");
+            string sql = string.Format("select tl.Id, ti.Years,ti.Code as TaskCode,ti.TaskName,a.Code,a.AgencyName,a.Person,tl.Status,tl.SelfCode,tl.SelfName,tl.SelfTime,tl.ChargeCode,tl.ChargeName,tl.ChargeTime,tl.FinanceCode,tl.FinanceName,tl.FinanceTime,tl.Remark from TaskList as tl left join TaskInfo as ti on tl.TaskId=ti.Id left join Agency as a on tl.ObjectCode=a.Code");
             Grid1.RecordCount = GetTotalCount(sql);
             // 2.获取当前分页数据
             DataTable table = GetPagedDataTable(sql);
+            if (table.Rows.Count>0)
+            {
+                foreach (DataRow row in table.Rows)
+                {
+                    if (row["Status"].ToString()=="1")
+                    {
+                        row["Status"] = "单位未自评";
+                    }
+                    if (row["Status"].ToString() == "2")
+                    {
+                        row["Status"] = "主管未审核";
+                    }
+                    if (row["Status"].ToString() == "3")
+                    {
+                        row["Status"] = "财政未审核";
+                    }
+                    if (row["Status"].ToString() == "4")
+                    {
+                        row["Status"] = "已评价";
+                    }
+                }
+            }
             // 3.绑定到Grid
             Grid1.DataSource = table;
             Grid1.DataBind();
@@ -86,48 +103,14 @@ namespace PlatFormWeb.User
 
         protected void Grid1_PageIndexChange(object sender, FineUI.GridPageEventArgs e)
         {
-            //Grid1.PageIndex = e.NewPageIndex;
-
+            Grid1.PageIndex = e.NewPageIndex;
             LoadData();
         }
 
         protected void Grid1_Sort(object sender, FineUI.GridSortEventArgs e)
         {
-            //Grid1.SortDirection = e.SortDirection;
-            //Grid1.SortField = e.SortField;
-
             LoadData();
         }
 
-        protected void Grid1_RowDoubleClick(object sender, GridRowClickEventArgs e)
-        {
-            object[] keys = Grid1.DataKeys[e.RowIndex];
-            string sql_list = "select * from UserAgency where UsedId=" + Session["UserId"] + " and Code='" + keys[1] + "'";
-            DataTable dt = DBAccess.QueryDataTable(sql_list);
-            if (dt.Rows.Count > 0)
-            {
-                PageContext.RegisterStartupScript(ActiveWindow.GetHideRefreshReference());
-            }
-            else
-            {
-                string sql = string.Format("insert into UserAgency(UsedId,Code) values({0},'{1}')", Session["UserId"], keys[1]);
-                int count = DBAccess.ExecTransSql(sql);
-                if (count > 0)
-                {
-                    //生成内控评价
-                    string sqls = string.Empty;
-                    sqls += "insert into TaskList(";
-                    sqls += "TaskId,ObjectCode,Status)";
-                    sqls += " values(1,'"+ keys[1] + "','1')";
-                    int counts = DBAccess.ExecTransSql(sqls);
-                    PageContext.RegisterStartupScript(ActiveWindow.GetHideRefreshReference());
-                }
-                else
-                {
-                    Alert.ShowInTop("增加失败");
-                    PageContext.RegisterStartupScript(ActiveWindow.GetHideRefreshReference());
-                }
-            }
-        }
     }
 }
